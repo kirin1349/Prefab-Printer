@@ -21,15 +21,21 @@ public class PrefabPrinter
 
     private bool m_running = false;
 
-
     private GameObject m_currentObject = null;
     private string m_currentObjectName = string.Empty;
     private string m_currentOutputPath = string.Empty;
-    private float m_currentFrame = 0;
+    private int m_currentFrame = 0;
     private float m_currentTimePass = 0;
     private float m_currentIntervalCount = 0;
     private float m_currentIntervalTotal = 0;
     private float m_currentDuration = 0;
+
+    private List<Texture2D> m_currentTextures = new List<Texture2D>();
+    private int m_currentPrintX = 0;
+    private int m_currentPrintY = 0;
+
+    private RenderTexture m_cachedTexture = null;
+    private Color m_cachedColor = Color.clear;
 
     public void setCamera(Camera value)
     {
@@ -100,6 +106,10 @@ public class PrefabPrinter
         m_running = true;
         m_canvas = RenderTexture.GetTemporary(m_canvasSize.x, m_canvasSize.y, 32, RenderTextureFormat.ARGB32);
         m_camera.targetTexture = m_canvas;
+        m_cachedTexture = RenderTexture.active;
+        RenderTexture.active = m_canvas;
+        m_cachedColor = m_camera.backgroundColor;
+        m_camera.backgroundColor = Color.clear;
         int count = m_objects.Count;
         for (int i = 0; i < count; i++)
         {
@@ -110,6 +120,9 @@ public class PrefabPrinter
 
     public void done()
     {
+        RenderTexture.active = m_cachedTexture;
+        m_camera.backgroundColor = m_cachedColor;
+        m_cachedTexture = null;
         showComplete();
         m_running = false;
         m_camera.targetTexture = null;
@@ -145,6 +158,24 @@ public class PrefabPrinter
 
     protected void startPrint()
     {
+        if (m_currentTextures.Count > 0)
+        {
+            Texture2D texture = null;
+            while (m_currentTextures.Count > 0)
+            {
+                texture = m_currentTextures[m_currentTextures.Count - 1];
+                m_currentTextures.RemoveAt(m_currentTextures.Count - 1);
+                Texture2D.DestroyImmediate(texture);
+            }
+        }
+        m_currentPrintX = 0;
+        m_currentPrintY = 0;
+        if (m_printSize.x != m_canvasSize.x) m_currentPrintX = Mathf.FloorToInt(m_canvas.width * 0.5f - m_printSize.x * 0.5f);
+        if (m_printSize.y != m_canvasSize.y) m_currentPrintY = Mathf.FloorToInt(m_canvas.height * 0.5f - m_printSize.y * 0.5f);
+        for (int i = 0; i < m_frameTotal; i++)
+        {
+            m_currentTextures.Add(new Texture2D(m_printSize.x, m_printSize.y, m_outputTextureFormat, false));
+        }
         m_currentFrame = 0;
         m_currentIntervalCount = 0;
         m_currentTimePass = 0;
@@ -174,6 +205,18 @@ public class PrefabPrinter
 
     protected void updatePrint(float deltaSec)
     {
+        if (m_currentFrame >= m_frameTotal)
+        {
+            completePrint();
+            return;
+        }
+
+        //if (m_currentTimePass >= m_currentDuration)
+        //{
+        //    completePrint();
+        //    return;
+        //}
+
         m_currentIntervalCount += deltaSec;
         while (m_currentIntervalCount >= m_currentIntervalTotal)
         {
@@ -185,42 +228,38 @@ public class PrefabPrinter
             }
         }
         m_currentTimePass += deltaSec;
-        if (m_currentFrame >= m_frameTotal)
-        {
-            completePrint();
-        }
-        else
-        {
-            if (m_currentTimePass >= m_currentDuration)
-            {
-                completePrint();
-            }
-        }
     }
 
     protected void completePrint()
     {
+        if (m_currentTextures.Count > 0)
+        {
+            Texture2D texture = null;
+            int count = m_currentTextures.Count;
+            for (int i = count - 1; i >= 0; i--)
+            {
+                texture = m_currentTextures[i];
+                m_currentTextures.RemoveAt(i);
+                save(texture);
+                Texture2D.DestroyImmediate(texture);
+            }
+        }
         m_currentObject = null;
     }
 
     protected void print()
     {
         m_currentFrame++;
-        RenderTexture cachedTexture = RenderTexture.active;
-        RenderTexture.active = m_canvas;
-        Color cachedColor = m_camera.backgroundColor;
-        int vx = 0;
-        int vy = 0;
-        int vw = m_printSize.x;
-        int vh = m_printSize.y;
-        if (m_printSize.x != m_canvasSize.x) vx = Mathf.FloorToInt(m_canvas.width * 0.5f - m_printSize.x * 0.5f);
-        if (m_printSize.y != m_canvasSize.y) vy = Mathf.FloorToInt(m_canvas.height * 0.5f - m_printSize.y * 0.5f);
-        m_camera.backgroundColor = Color.clear;
         m_camera.Render();
-        Texture2D texture = new Texture2D(vw, vh, m_outputTextureFormat, false);
-        texture.ReadPixels(new Rect(vx, vy, m_printSize.x, m_printSize.y), 0, 0);
+        Texture2D texture = m_currentTextures[m_currentFrame - 1];
+        texture.ReadPixels(new Rect(m_currentPrintX, m_currentPrintY, m_printSize.x, m_printSize.y), 0, 0);
+    }
+
+    protected void save(Texture2D texture)
+    {
         string ext = string.Empty;
         byte[] bytes = null;
+
         switch (m_outputTextureType)
         {
             case PrefabPrinterTextureTypes.JPG:
@@ -231,14 +270,14 @@ public class PrefabPrinter
                 break;
             default:
                 {
-                    Color blackCol;
+                    Color col;
                     for (int i = 0; i < m_printSize.x; i++)
                     {
                         for (int j = 0; j < m_printSize.y; j++)
                         {
-                            blackCol = texture.GetPixel(i, j);
-                            blackCol.a = 0.299f * blackCol.r + 0.587f * blackCol.g + 0.114f * blackCol.b;
-                            texture.SetPixel(i, j, blackCol);
+                            col = texture.GetPixel(i, j);
+                            col.a = 0.299f * col.r + 0.587f * col.g + 0.114f * col.b;
+                            texture.SetPixel(i, j, col);
                         }
                     }
                     bytes = texture.EncodeToPNG();
@@ -246,12 +285,11 @@ public class PrefabPrinter
                 }
                 break;
         }
+
         string fileName = string.Format(m_outputNameFormat, m_currentObjectName, m_currentFrame);
         fileName = string.Format("{0}.{1}", fileName, ext);
         string path = System.IO.Path.Combine(m_currentOutputPath, fileName);
         System.IO.File.WriteAllBytes(path, bytes);
-        RenderTexture.active = cachedTexture;
-        m_camera.backgroundColor = cachedColor;
     }
 
     public void dispose()
