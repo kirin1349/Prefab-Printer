@@ -106,8 +106,6 @@ public class PrefabPrinter
         m_running = true;
         m_canvas = RenderTexture.GetTemporary(m_canvasSize.x, m_canvasSize.y, 32, RenderTextureFormat.ARGB32);
         m_camera.targetTexture = m_canvas;
-        m_cachedTexture = RenderTexture.active;
-        RenderTexture.active = m_canvas;
         m_cachedColor = m_camera.backgroundColor;
         m_camera.backgroundColor = Color.clear;
         int count = m_objects.Count;
@@ -120,7 +118,6 @@ public class PrefabPrinter
 
     public void done()
     {
-        RenderTexture.active = m_cachedTexture;
         m_camera.backgroundColor = m_cachedColor;
         m_cachedTexture = null;
         showComplete();
@@ -240,7 +237,7 @@ public class PrefabPrinter
             {
                 texture = m_currentTextures[i];
                 m_currentTextures.RemoveAt(i);
-                save(texture);
+                save(texture, i + 1);
                 Texture2D.DestroyImmediate(texture);
             }
         }
@@ -250,12 +247,14 @@ public class PrefabPrinter
     protected void print()
     {
         m_currentFrame++;
+        m_cachedTexture = RenderTexture.active;
+        RenderTexture.active = m_canvas;
         m_camera.Render();
-        Texture2D texture = m_currentTextures[m_currentFrame - 1];
-        texture.ReadPixels(new Rect(m_currentPrintX, m_currentPrintY, m_printSize.x, m_printSize.y), 0, 0);
+        m_currentTextures[m_currentFrame - 1].ReadPixels(new Rect(m_currentPrintX, m_currentPrintY, m_printSize.x, m_printSize.y), 0, 0);
+        RenderTexture.active = m_cachedTexture;
     }
 
-    protected void save(Texture2D texture)
+    protected void save(Texture2D texture, int frame)
     {
         string ext = string.Empty;
         byte[] bytes = null;
@@ -286,7 +285,7 @@ public class PrefabPrinter
                 break;
         }
 
-        string fileName = string.Format(m_outputNameFormat, m_currentObjectName, m_currentFrame);
+        string fileName = string.Format(m_outputNameFormat, m_currentObjectName, frame);
         fileName = string.Format("{0}.{1}", fileName, ext);
         string path = System.IO.Path.Combine(m_currentOutputPath, fileName);
         System.IO.File.WriteAllBytes(path, bytes);
