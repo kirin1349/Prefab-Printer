@@ -10,6 +10,7 @@ public class PrefabPrinter
     private int m_frameTotal = 0;
     private float m_duration = 0;
     private bool m_useSimulate = false;
+    private bool m_ignoreZero = false;
     private string m_outputFolder = string.Empty;
     private string m_outputNameFormat = string.Empty;
     private PrefabPrinterTextureTypes m_outputTextureType = PrefabPrinterTextureTypes.PNG;
@@ -66,6 +67,11 @@ public class PrefabPrinter
     public void setUseSimulate(bool value)
     {
         m_useSimulate = value;
+    }
+
+    public void setIgnoreZero(bool value)
+    {
+        m_ignoreZero = value;
     }
 
     public void setOutputFolder(string value)
@@ -183,7 +189,7 @@ public class PrefabPrinter
         m_currentIntervalCount = 0;
         m_currentTimePass = 0;
         m_currentDuration = m_duration > 0 ? m_duration : PrefabPrinterUtility.CalculateObjectDuraion(m_currentObject, true);
-        m_currentIntervalTotal = m_currentDuration / (m_frameTotal - 1);
+        m_currentIntervalTotal = m_ignoreZero ? (m_currentDuration / m_frameTotal) : (m_currentDuration / (m_frameTotal - 1));
         m_currentOutputPath = System.IO.Path.Combine(Application.dataPath, m_outputFolder);
         m_currentObjectName = m_currentObject.name;
         if (!System.IO.Directory.Exists(m_currentOutputPath))
@@ -264,7 +270,7 @@ public class PrefabPrinter
         RenderTexture.active = m_canvas;
         if (m_useSimulate)
         {
-            float simulateTime = (m_currentFrame - 1) * m_currentIntervalTotal;
+            float simulateTime = m_ignoreZero ? (m_currentFrame * m_currentIntervalTotal) : ((m_currentFrame - 1) * m_currentIntervalTotal);
             PrefabPrinterUtility.SimulateObject(m_currentObject, simulateTime);
         }
         m_camera.Render();
