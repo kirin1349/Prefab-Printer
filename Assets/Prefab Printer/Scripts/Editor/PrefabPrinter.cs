@@ -12,6 +12,7 @@ public class PrefabPrinter
     private bool m_useSimulate = false;
     private bool m_ignoreZero = false;
     private bool m_additiveMode = false;
+    private Vector4 m_rgbaMultiple = Vector4.one;
     private string m_outputFolder = string.Empty;
     private string m_outputNameFormat = string.Empty;
     private PrefabPrinterTextureTypes m_outputTextureType = PrefabPrinterTextureTypes.PNG;
@@ -78,6 +79,11 @@ public class PrefabPrinter
     public void setAdditiveMode(bool value)
     {
         m_additiveMode = value;
+    }
+
+    public void setRGBAMultiple(Vector4 value)
+    {
+        m_rgbaMultiple = value;
     }
 
     public void setOutputFolder(string value)
@@ -308,6 +314,10 @@ public class PrefabPrinter
                             {
                                 col = texture.GetPixel(i, j);
                                 col.a = 0.299f * col.r + 0.587f * col.g + 0.114f * col.b;
+                                col.r *= m_rgbaMultiple.x;
+                                col.g *= m_rgbaMultiple.y;
+                                col.b *= m_rgbaMultiple.z;
+                                col.a *= m_rgbaMultiple.w;
                                 texture.SetPixel(i, j, col);
                             }
                         }

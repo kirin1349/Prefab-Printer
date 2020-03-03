@@ -16,6 +16,7 @@ public class PrefabPrinterWindow : EditorWindow
     private bool m_useSimulate = true;
     private bool m_ignoreZero = true;
     private bool m_additiveMode = true;
+    private Vector4 m_rgbaMultiple = Vector4.one;
     private string m_outputFolder = string.Empty;
     private string m_outputNameFormat = string.Empty;
     private PrefabPrinterTextureTypes m_outputTextureType = PrefabPrinterTextureTypes.PNG;
@@ -41,6 +42,7 @@ public class PrefabPrinterWindow : EditorWindow
             m_useSimulate = true;
             m_ignoreZero = true;
             m_additiveMode = true;
+            m_rgbaMultiple = Vector4.one;
             m_outputFolder = "Output";
             m_outputNameFormat = "{0}_{1}";
             m_outputCreateFolder = true;
@@ -61,6 +63,7 @@ public class PrefabPrinterWindow : EditorWindow
         m_useSimulate = EditorGUILayout.Toggle(new GUIContent("Simulate (Particle Only)"), m_useSimulate);
         m_ignoreZero = EditorGUILayout.Toggle(new GUIContent("Ignore 0s"), m_ignoreZero);
         m_additiveMode = EditorGUILayout.Toggle(new GUIContent("Additive Mode"), m_additiveMode);
+        m_rgbaMultiple = EditorGUILayout.Vector4Field(new GUIContent("RGBA Multiple"), m_rgbaMultiple);
         m_outputFolder = EditorGUILayout.TextField(new GUIContent("Output Folder"), m_outputFolder);
         m_outputNameFormat = EditorGUILayout.TextField(new GUIContent("Output Name Format"), m_outputNameFormat);
         m_outputTextureType = (PrefabPrinterTextureTypes)EditorGUILayout.EnumPopup(new GUIContent("Output Texture Type"), m_outputTextureType);
@@ -126,6 +129,7 @@ public class PrefabPrinterWindow : EditorWindow
         m_printer.setUseSimulate(m_useSimulate);
         m_printer.setIgnoreZero(m_ignoreZero);
         m_printer.setAdditiveMode(m_additiveMode);
+        m_printer.setRGBAMultiple(m_rgbaMultiple);
         m_printer.setOutputFolder(m_outputPath);
         m_printer.setOutputNameFormat(m_outputNameFormat);
         m_printer.setOutputTextureType(m_outputTextureType);
