@@ -11,6 +11,7 @@ public class PrefabPrinter
     private float m_duration = 0;
     private bool m_useSimulate = false;
     private bool m_ignoreZero = false;
+    private bool m_additiveMode = false;
     private string m_outputFolder = string.Empty;
     private string m_outputNameFormat = string.Empty;
     private PrefabPrinterTextureTypes m_outputTextureType = PrefabPrinterTextureTypes.PNG;
@@ -72,6 +73,11 @@ public class PrefabPrinter
     public void setIgnoreZero(bool value)
     {
         m_ignoreZero = value;
+    }
+
+    public void setAdditiveMode(bool value)
+    {
+        m_additiveMode = value;
     }
 
     public void setOutputFolder(string value)
@@ -293,14 +299,17 @@ public class PrefabPrinter
                 break;
             default:
                 {
-                    Color col;
-                    for (int i = 0; i < m_printSize.x; i++)
+                    if (m_additiveMode)
                     {
-                        for (int j = 0; j < m_printSize.y; j++)
+                        Color col;
+                        for (int i = 0; i < m_printSize.x; i++)
                         {
-                            col = texture.GetPixel(i, j);
-                            col.a = 0.299f * col.r + 0.587f * col.g + 0.114f * col.b;
-                            texture.SetPixel(i, j, col);
+                            for (int j = 0; j < m_printSize.y; j++)
+                            {
+                                col = texture.GetPixel(i, j);
+                                col.a = 0.299f * col.r + 0.587f * col.g + 0.114f * col.b;
+                                texture.SetPixel(i, j, col);
+                            }
                         }
                     }
                     bytes = texture.EncodeToPNG();
