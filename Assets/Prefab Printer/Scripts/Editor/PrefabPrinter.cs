@@ -9,6 +9,7 @@ public class PrefabPrinter
     private Vector2Int m_printSize = Vector2Int.zero;
     private int m_frameTotal = 0;
     private float m_duration = 0;
+    private bool m_useSimulate = false;
     private string m_outputFolder = string.Empty;
     private string m_outputNameFormat = string.Empty;
     private PrefabPrinterTextureTypes m_outputTextureType = PrefabPrinterTextureTypes.PNG;
@@ -60,6 +61,11 @@ public class PrefabPrinter
     public void setDuration(float value)
     {
         m_duration = value;
+    }
+
+    public void setUseSimulate(bool value)
+    {
+        m_useSimulate = value;
     }
 
     public void setOutputFolder(string value)
@@ -192,7 +198,14 @@ public class PrefabPrinter
                 System.IO.Directory.CreateDirectory(m_currentOutputPath);
             }
         }
-        PrefabPrinterUtility.PlayObject(m_currentObject);
+        if (m_useSimulate)
+        {
+            PrefabPrinterUtility.StopObject(m_currentObject);
+        }
+        else
+        {
+            PrefabPrinterUtility.PlayObject(m_currentObject);
+        }
         print();
         if (m_currentDuration <= 0)
         {
@@ -249,6 +262,11 @@ public class PrefabPrinter
         m_currentFrame++;
         m_cachedTexture = RenderTexture.active;
         RenderTexture.active = m_canvas;
+        if (m_useSimulate)
+        {
+            float simulateTime = (m_currentFrame - 1) * m_currentIntervalTotal;
+            PrefabPrinterUtility.SimulateObject(m_currentObject, simulateTime);
+        }
         m_camera.Render();
         m_currentTextures[m_currentFrame - 1].ReadPixels(new Rect(m_currentPrintX, m_currentPrintY, m_printSize.x, m_printSize.y), 0, 0);
         RenderTexture.active = m_cachedTexture;

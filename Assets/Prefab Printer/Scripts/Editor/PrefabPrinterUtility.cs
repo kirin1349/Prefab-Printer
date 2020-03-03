@@ -77,4 +77,50 @@ public class PrefabPrinterUtility
             // TODO: 
         }
     }
+
+    public static void StopObject(GameObject go)
+    {
+        Selection.activeGameObject = go;
+        ParticleSystem ps = go.GetComponent<ParticleSystem>();
+        if (ps != null)
+        {
+            ps.Stop();
+        }
+        Animation ani = go.GetComponent<Animation>();
+        if (ani != null)
+        {
+            if (ani.clip != null)
+            {
+                ani.Stop();
+            }
+        }
+        Animator amt = go.GetComponent<Animator>();
+        if (amt != null)
+        {
+            // TODO: 
+        }
+    }
+
+    public static void SimulateObject(GameObject go, float time)
+    {
+        Selection.activeGameObject = go;
+        ParticleSystem ps = go.GetComponent<ParticleSystem>();
+        if (ps != null)
+        {
+            ps.Simulate(time);
+        }
+        Animation ani = go.GetComponent<Animation>();
+        if (ani != null)
+        {
+            if (ani.clip != null)
+            {
+                // TODO: 
+            }
+        }
+        Animator amt = go.GetComponent<Animator>();
+        if (amt != null)
+        {
+            // TODO: 
+        }
+    }
 }
